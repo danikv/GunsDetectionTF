@@ -1,0 +1,36 @@
+<html>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <body>
+    <h1>Object Detection Demo</h1>
+    <div class="images-container"> 
+        <table border='1' class="images-table">
+            <tr>
+                <th>Photo Name</th>
+                <th>Photo</th>
+            </tr>
+        {% for face in faces %}
+            <tr>
+                <td>
+                    <h1 class="grill1">{{ face.id }}</h1>
+                </td>
+                <td><img id="photo-{{face.id}}" src="{{face.photoPath}}" alt="Smiley face" height="100" width="100"></td>
+            </tr>
+        {% endfor %}
+        </table>
+        <table border='1' class="images-table">
+            <tr>
+                <th>Photo Name</th>
+                <th>Photo</th>
+            </tr>
+        {% for gun in guns %}
+            <tr>
+                <td>
+                    <h1 class="grill1">{{ gun.id }}</h1>
+                </td>
+                <td><img id="photo-{{gun.id}}" src="{{gun.photoPath}}" alt="Smiley face" height="100" width="100"></td>
+            </tr>
+        {% endfor %}
+        </table>
+    </div>
+  </body>
+</html>
