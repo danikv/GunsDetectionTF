@@ -1,0 +1,30 @@
+item {
+  name: "/m/0gxl3"
+  id: 1
+  display_name: "Gun"
+}
+item {
+  name: "/m/06nrc"
+  id: 1
+  display_name: "Gun"
+}
+item {
+  name: "/m/06c54"
+  id: 1
+  display_name: "Gun"
+}
+item {
+  name: "/m/01g317"
+  id: 2
+  display_name: "Person"
+}
+item {
+  name: "/m/019jd"
+  id: 3
+  display_name: "Boat"
+}
+item {
+  name: "/m/0cmf2"
+  id: 4
+  display_name: "Airplane"
+}
