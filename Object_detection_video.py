@@ -31,8 +31,8 @@ from utils import label_map_util
 from utils import visualization_utils as vis_util
 
 # Name of the directory containing the object detection module we're using
-MODEL_NAME = 'inference_graph'
-VIDEO_NAME = 'test.mov'
+MODEL_NAME = 'first_try_faster_rcnn_hackhacton'
+VIDEO_NAME = 'guns.mp4'
 
 # Grab path to current working directory
 CWD_PATH = os.getcwd()
@@ -42,7 +42,7 @@ CWD_PATH = os.getcwd()
 PATH_TO_CKPT = os.path.join(CWD_PATH,MODEL_NAME,'frozen_inference_graph.pb')
 
 # Path to label map file
-PATH_TO_LABELS = os.path.join(CWD_PATH,'training','labelmap.pbtxt')
+PATH_TO_LABELS = os.path.join(CWD_PATH,'config','oid_object_detection_label_map.pbtxt')
 
 # Path to video
 PATH_TO_VIDEO = os.path.join(CWD_PATH,VIDEO_NAME)
@@ -90,17 +90,45 @@ num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 # Open video file
 video = cv2.VideoCapture(PATH_TO_VIDEO)
 
+fr = 0
 while(video.isOpened()):
-
+    id = 0
     # Acquire frame and expand frame dimensions to have shape: [1, None, None, 3]
     # i.e. a single-column array, where each item in the column has the pixel RGB value
     ret, frame = video.read()
+    if not ret:
+        break
     frame_expanded = np.expand_dims(frame, axis=0)
 
     # Perform the actual detection by running the model with the image as input
     (boxes, scores, classes, num) = sess.run(
         [detection_boxes, detection_scores, detection_classes, num_detections],
         feed_dict={image_tensor: frame_expanded})
+    boxes = boxes[0]
+    classes = classes[0]
+    scores = scores[0]
+    # print(frame.shape)
+    for i, (box, score, clas) in enumerate(zip(boxes,scores,classes)):
+        if clas == 1:
+            if score >= 0.7:
+                name = f'gun_fr{fr}_obj{id}'
+                top = int(box[0] * frame.shape[0])
+                bot = int(box[2] * frame.shape[0])
+                left = int(box[1] * frame.shape[1])
+                right = int(box[3] * frame.shape[1])
+                cv2.imwrite(f'{name}.jpg', frame[top:bot, left:right])
+                id += 1
+            # scores[i] += 0.15
+            scores[i] = min(scores[i] + 0.15, 1)
+        if clas == 4:
+            scores[i] -= 0.15
+        # if clas == 2:
+        #     scores[i] -= 0.5
+        # print(len(box))
+        # print(clas)
+        # print(score)
+        # print(box)
+
 
     # Draw the results of the detection (aka 'visulaize the results')
     vis_util.visualize_boxes_and_labels_on_image_array(
@@ -111,11 +139,11 @@ while(video.isOpened()):
         category_index,
         use_normalized_coordinates=True,
         line_thickness=8,
-        min_score_thresh=0.60)
+        min_score_thresh=0.80)
 
     # All the results have been drawn on the frame, so it's time to display it.
     cv2.imshow('Object detector', frame)
-
+    fr += 1
     # Press 'q' to quit
     if cv2.waitKey(1) == ord('q'):
         break
