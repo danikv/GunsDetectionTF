@@ -19,27 +19,18 @@ import cv2
 import base64
 import os
 
+def get_images(pathname):
+    return list(map(lambda filename : {'id': filename, 'photoPath': 'static/images/{}/{}'.format(pathname, filename)}, os.listdir('static/images/' + pathname)))
+
 app = Flask(__name__)
 
 @app.route('/')
 def index():
-    faces= []
-    guns = []
-    for filename in os.listdir('static/images/faces'):
-        faces.append({'id': filename, "photoPath": 'static/images/faces/' + filename})
-    for filename in os.listdir('static/images/guns'):
-        guns.append({'id': filename, "photoPath": 'static/images/guns/' + filename})
-    return render_template('index.html', faces=faces, guns=guns)
+    return render_template('index.html')
 
 @app.route('/objects')
 def objects():
-    faces= []
-    guns = []
-    for filename in os.listdir('static/images/faces'):
-        faces.append({'id': filename, "photoPath": 'static/images/faces/' + filename})
-    for filename in os.listdir('static/images/guns'):
-        guns.append({'id': filename, "photoPath": 'static/images/guns/' + filename})
-    return render_template('object.html', faces=faces, guns=guns)
+    return render_template('object.html', faces=get_images('faces'), guns=get_images('guns'))
 
 def gen(camera):
     while True:
