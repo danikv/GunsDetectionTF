@@ -116,7 +116,7 @@ while(video.isOpened()):
                 bot = int(box[2] * frame.shape[0])
                 left = int(box[1] * frame.shape[1])
                 right = int(box[3] * frame.shape[1])
-                cv2.imwrite(f'{name}.jpg', frame[top:bot, left:right])
+                cv2.imwrite(f'guns/{name}.jpg', frame[top:bot, left:right])
                 id += 1
             # scores[i] += 0.15
             scores[i] = min(scores[i] + 0.15, 1)
