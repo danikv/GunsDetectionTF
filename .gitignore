@@ -1,4 +1,8 @@
 *.jpg
+!video_streaming_with_flask_example/static/images/**/*.jpg
 *.zip
 .idea/
 *.mp4
+*.pyc
+first_try_faster_rcnn_hackhacton/
+.ipynb_checkpoints/
