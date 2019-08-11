@@ -24,7 +24,7 @@ def remove_duplicates(gun_files_queue, ref_images):
 
         name = 'guns_{}'.format(current_saved_img_id)
 
-        # pass only images that are close enough to reference images
+        #pass only images that are close enough to reference images
         ref_matches = []
         for des in ref_descriptors:
             ref_matches.append(bf.match(des1, des))
@@ -49,11 +49,13 @@ def remove_duplicates(gun_files_queue, ref_images):
             if not matches:
                 continue
 
-            if not is_image_far_from_refs([matches], constants.REFERENCE_MAX_DIST):
+            if not is_image_far_from_refs([matches], constants.SIMILARITY_MAX_DIST):
+                print('daniel2')
                 should_update = False
                 break
 
         if should_update:
+            print('daniel3')
             saved_images.append(current_image)
             cv2.imwrite('static/images/guns/{}.jpg'.format(name), current_image)
             current_saved_img_id += 1
@@ -71,7 +73,6 @@ def is_image_far_from_refs(ref_matches, max_dist):
             is_far = False
 
     return is_far
-
 
 def get_ref_models_descriptors(orb, ref_models):
     ref_descriptors = []

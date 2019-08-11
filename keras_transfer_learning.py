@@ -19,25 +19,25 @@ sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
 keras.backend.tensorflow_backend.set_session(sess)
 
 # hyper parameters for model
-nb_classes = 26  # number of classes
+nb_classes = 1  # number of classes
 based_model_last_block_layer_number = 126  # value is based on based model selected.
 img_width, img_height = 299, 299  # change based on the shape/structure of your images
-batch_size = 32  # try 4, 8, 16, 32, 64, 128, 256 dependent on CPU/GPU memory capacity (powers of 2 values).
+batch_size = 16  # try 4, 8, 16, 32, 64, 128, 256 dependent on CPU/GPU memory capacity (powers of 2 values).
 nb_epoch = 50  # number of iteration the algorithm gets trained.
 learn_rate = 1e-4  # sgd learning rate
 momentum = .9  # sgd momentum to avoid local minimum
 transformation_ratio = .05  # how aggressive will be the data augmentation/transformation
-load = True
+load = False
 
 def train(train_data_dir, validation_data_dir, model_path):
     # Pre-Trained CNN Model using imagenet dataset for pre-trained weights
-    top_weights_path = os.path.join(os.path.abspath(model_path), 'top_model_weights_mobile_net.h5')
-    base_model = MobileNetV2(input_shape=(img_width, img_height, 3), weights="imagenet", include_top=False)
+    top_weights_path = os.path.join(os.path.abspath(model_path), 'top_model_weights_guns_try.h5')
+    base_model = Xception(input_shape=(img_width, img_height, 3), weights="imagenet", include_top=False)
 
     # Top Model Block
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
-    predictions = Dense(nb_classes, activation='softmax')(x)
+    predictions = Dense(nb_classes, activation='sigmoid')(x)
 
     # add your top layer block to your base model
     model = Model(base_model.input, predictions)
@@ -53,8 +53,8 @@ def train(train_data_dir, validation_data_dir, model_path):
 
     # first: train only the top layers (which were randomly initialized)
     # i.e. freeze all layers of the based model that is already pre-trained.
-    #for layer in base_model.layers:
-    #    layer.trainable = False
+    for layer in base_model.layers:
+        layer.trainable = False
 
     # Read Data and Augment it: Make sure to select augmentations that are appropriate to your images.
     # To save augmentations un-comment save lines and add to your flow parameters.
@@ -72,7 +72,7 @@ def train(train_data_dir, validation_data_dir, model_path):
     train_generator = train_datagen.flow_from_directory(train_data_dir,
                                                         target_size=(img_width, img_height),
                                                         batch_size=batch_size,
-                                                        class_mode='categorical')
+                                                        class_mode='binary')
     # save_to_dir=os.path.join(os.path.abspath(train_data_dir), '../preview')
     # save_prefix='aug',
     # save_format='jpeg')
@@ -81,10 +81,10 @@ def train(train_data_dir, validation_data_dir, model_path):
     validation_generator = validation_datagen.flow_from_directory(validation_data_dir,
                                                                   target_size=(img_width, img_height),
                                                                   batch_size=batch_size,
-                                                                  class_mode='categorical')
+                                                                  class_mode='binary')
 
     model.compile(optimizer='nadam',
-                  loss='categorical_crossentropy',  # categorical_crossentropy if multi-class classifier
+                  loss='binary_crossentropy',  # categorical_crossentropy if multi-class classifier
                   metrics=['accuracy'])
 
     # save weights of best training epoch: monitor either val_loss or val_acc

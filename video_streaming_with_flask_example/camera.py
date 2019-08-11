@@ -3,17 +3,18 @@ import cv2
 import numpy as np
 import tensorflow as tf
 import sys
-from queue import Queue
-from threading import Thread
 from remove_duplicates import remove_duplicates
 from copy import deepcopy
-from face_detection_main import face_det
+from multiprocessing import Process, Queue
+from video_face_recognition import face_recognition_event_loop
 
 # This is needed since the notebook is stored in the object_detection folder.
 sys.path.append("..")
 
 from utils import label_map_util
 from utils import visualization_utils as vis_util
+
+
 
 class VideoCamera(object):
     def __init__(self):
@@ -24,13 +25,7 @@ class VideoCamera(object):
         # Using OpenCV to capture from device 0. If you have trouble capturing
         # from a webcam, comment the line below out and use a video file
         # instead.
-        self.video = cv2.VideoCapture('../guns_s.mp4')
-        # self.vwriter = cv2.VideoWriter('vid.mp4', fps=25, frameSize=(1080,1920), fourcc=-1)
-        # self.vwriter.open('vid.mp4', fps=25, frameSize=(1080,1920), fourcc=-1)
-        # If you decide to use video.mp4, you must have this file in the folder
-        # as the main.py.
-        # self.video = cv2.VideoCapture('video.mp4')
-        # Import utilites
+        self.video = cv2.VideoCapture('guns.mp4')
 
         # Name of the directory containing the object detection module we're using
         MODEL_NAME = '../first_try_faster_rcnn_hackhacton'
@@ -85,25 +80,21 @@ class VideoCamera(object):
         # Number of objects detected
         self.num_detections = detection_graph.get_tensor_by_name('num_detections:0')
 
-        self.run_predictions = True
+        self.gun_predictions_queue = Queue()
+        self.frames_for_face_recognition_queue = Queue()
 
-        self.gun_files_queue = Queue()
-        self.faces_queue = Queue()
-
-        self.remove_duplicates_thread = Thread(target=remove_duplicates, args=[self.gun_files_queue,
+        self.remove_duplicates_process = Process(target=remove_duplicates, args=[self.gun_predictions_queue,
                                                                                ['static/images/references/gun_ref.jpg',
-                                                                                'static/images/references/gun_ref2.jpg',
-                                                                                'static/images/references/gun_ref3.jpg',
-                                                                                'static/images/references/gun_ref4.jpg'
-                                                                                ]])
-        self.remove_duplicates_thread.start()
+                                                                               'static/images/references/gun_ref2.jpg',
+                                                                               'static/images/references/gun_ref3.jpg',
+                                                                               'static/images/references/gun_ref4.jpg']])
+        self.remove_duplicates_process.start()
 
-        self.faces_thread = Thread(target=face_det, args=[self.faces_queue])
-        self.faces_thread.start()
-
+        self.faces_recoginition_process = Process(target=face_recognition_event_loop, args=[self.frames_for_face_recognition_queue, 
+                                                                                        ['static/images/references/face_ref.jpg']])
+        self.faces_recoginition_process.start()
+    
     def get_predictions(self, ret, frame):
-        if not ret:
-            return None
         frame_expanded = np.expand_dims(frame, axis=0)
     
         # Perform the actual detection by running the model with the image as input
@@ -113,7 +104,6 @@ class VideoCamera(object):
         self.boxes = boxes[0]
         self.classes = classes[0]
         self.scores = scores[0]
-        # print(frame.shape)
         for i, (box, score, clas) in enumerate(zip(self.boxes,self.scores,self.classes)):
             if clas == 1:
                 if score >= 0.75:
@@ -122,20 +112,10 @@ class VideoCamera(object):
                     bot = int(box[2] * frame.shape[0])
                     left = int(box[1] * frame.shape[1])
                     right = int(box[3] * frame.shape[1])
-                    # cv2.imwrite('{}.jpg'.format(name), frame[top:bot, left:right])
-                    self.gun_files_queue.put(deepcopy(frame[top:bot, left:right]))
-                    #id += 1
-                # scores[i] += 0.15
+                    self.gun_predictions_queue.put(deepcopy(frame[top:bot, left:right]))
                 self.scores[i] = min(self.scores[i] + 0.05, 1)
             if clas == 4:
                 self.scores[i] -= 0.15
-            # if clas == 2:
-            #     scores[i] -= 0.5
-            # print(len(box))
-            # print(clas)
-            # print(score)
-            # print(box)
-    
     
         # Draw the results of the detection (aka 'visulaize the results')
         vis_util.visualize_boxes_and_labels_on_image_array(
@@ -154,11 +134,13 @@ class VideoCamera(object):
     
     def get_frame(self):
         success, image = self.video.read()
-        # print(image.shape)
         self.counter += 1
-        if self.counter % 1 == 0:
-            self.run_predictions = True
+        if not success:
+            return "".encode("utf-8")
+
+        if self.counter % 3 == 0:
             image = self.get_predictions(success, image)
+            self.frames_for_face_recognition_queue.put(deepcopy(image))
         else :
             vis_util.visualize_boxes_and_labels_on_image_array(
                 image,
@@ -169,15 +151,7 @@ class VideoCamera(object):
                 use_normalized_coordinates=True,
                 line_thickness=8,
                 min_score_thresh=0.80)
-            self.run_predictions = False
-        if not success:
-            # self.vwriter.release()
-            return "".encode("utf-8")
-
-        # cv2.imshow('img', image)
-        # cv2.waitKey(1)
-        # self.vwriter.write(image)
-        if image is None or len(image) == 0:
-            return "".encode("utf-8")
+            
+    
         ret, jpeg = cv2.imencode('.jpg', image)
         return jpeg.tobytes()
