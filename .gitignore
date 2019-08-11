@@ -3,10 +3,6 @@
 *.zip
 .idea/
 *.mp4
-<<<<<<< HEAD
 *.pyc
 first_try_faster_rcnn_hackhacton/
 .ipynb_checkpoints/
-=======
-*/__pycache__/*
->>>>>>> Choose Best Face Image
